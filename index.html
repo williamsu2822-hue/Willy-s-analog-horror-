@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>LOST SIGNAL – Analog Horror Cuts</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "IBM Plex Mono", Consolas, monospace;
+      background: #02030a;
+      color: #e5e7eb;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 1rem;
+      overflow-x: hidden;
+    }
+
+    /* CRT scanlines & flicker overlay */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        repeating-linear-gradient(
+          to bottom,
+          rgba(255, 255, 255, 0.05),
+          rgba(255, 255, 255, 0.05) 1px,
+          transparent 2px,
+          transparent 4px
+        );
+      mix-blend-mode: soft-light;
+      opacity: 0.2;
+      z-index: 10;
+      animation: flicker 1.4s infinite alternate;
+    }
+
+    @keyframes flicker {
+      0%   { opacity: 0.12; }
+      50%  { opacity: 0.22; }
+      100% { opacity: 0.16; }
+    }
+
+    .app {
+      max-width: 840px;
+      width: 100%;
+      background: radial-gradient(circle at top, #121521, #03040a 60%);
+      border-radius: 1rem;
+      box-shadow:
+        0 0 0 1px rgba(148, 163, 184, 0.2),
+        0 18px 45px rgba(0, 0, 0, 0.75);
+      padding: 1.5rem 2rem 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .app::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.9);
+      pointer-events: none;
+    }
+
+    h1 {
+      text-align: center;
+      margin-top: 0;
+      margin-bottom: 0.4rem;
+      font-size: 1.7rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+
+    .subtitle {
+      text-align: center;
+      font-size: 0.8rem;
+      color: #9ca3af;
+      margin-bottom: 1.4rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .warning {
+      text-align: center;
+      font-size: 0.75rem;
+      color: #f97373;
+      margin-bottom: 1rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .story-part {
+      display: none;
+      animation: cutIn 220ms ease-in-out;
+    }
+
+    .story-part.active {
+      display: block;
+    }
+
+    @keyframes cutIn {
+      from {
+        opacity: 0;
+        transform: translateY(6px) scale(1.01);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .story-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+      font-size: 0.75rem;
+      color: #94a3b8;
+    }
+
+    .tag {
+      padding: 0.15rem 0.6rem;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      white-space: nowrap;
+    }
+
+    .tag--tape {
+      border-color: rgba(244, 244, 245, 0.7);
+    }
+
+    .timestamp {
+      opacity: 0.8;
+    }
+
+    .story-image {
+      width: 100%;
+      max-height: 260px;
+      object-fit: cover;
+      border-radius: 0.5rem;
+      margin-bottom: 0.75rem;
+      filter: grayscale(100%) contrast(1.2) brightness(0.85);
+    }
+
+    .story-text {
+      font-size: 0.95rem;
+      line-height: 1.6;
+      margin-bottom: 1.1rem;
+      color: #e5e7eb;
+    }
+
+    .story-text span.glitch {
+      position: relative;
+      display: inline-block;
+      text-shadow:
+        -1px 0 rgba(59, 130, 246, 0.7),
+         1px 0 rgba(248, 113, 113, 0.7);
+      animation: glitchShift 1.5s infinite;
+    }
+
+    @keyframes glitchShift {
+      0%, 100% {
+        transform: translate(0, 0);
+      }
+      20% {
+        transform: translate(-1px, 0);
+      }
+      40% {
+        transform: translate(1px, 0);
+      }
+      60% {
+        transform: translate(0, 1px);
+      }
+      80% {
+        transform: translate(0, -1px);
+      }
+    }
+
+    .choices {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
+    button.choice-btn,
+    button.restart-btn {
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      padding: 0.55rem 0.9rem;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-family: inherit;
+      cursor: pointer;
+      background: rgba(15, 23, 42, 0.9);
+      color: #e5e7eb;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      transition:
+        transform 80ms ease,
+        box-shadow 120ms ease,
+        background 120ms ease,
+        border-color 120ms ease;
+      box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+      position: relative;
+      overflow: hidden;
+    }
+
+    button.choice-btn::after,
+    button.restart-btn::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        120deg,
+        transparent 0%,
+        rgba(148, 163, 184, 0.3) 50%,
+        transparent 100%
+      );
+      opacity: 0;
+      transform: translateX(-100%);
+      transition: opacity 0.2s ease, transform 0.25s ease;
+      pointer-events: none;
+    }
+
+    button.choice-btn:hover::after,
+    button.restart-btn:hover::after {
+      opacity: 0.7;
+      transform: translateX(100%);
+    }
+
+    button.choice-btn:hover,
+    button.restart-btn:hover {
+      transform: translateY(-1px);
+      background: rgba(15, 23, 42, 1);
+      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.9);
+      border-color: rgba(248, 250, 252, 0.9);
+    }
+
+    button.choice-btn:active,
+    button.restart-btn:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.7);
+    }
+
+    .restart-btn {
+      margin-top: 0.7rem;
+      border-color: rgba(248, 113, 113, 0.8);
+      color: #fecaca;
+    }
+
+    .ending-label {
+      display: inline-block;
+      padding: 0.1rem 0.7rem;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      margin-bottom: 0.5rem;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(148, 163, 184, 0.7);
+    }
+
+    .ending-title {
+      margin-top: 0;
+      margin-bottom: 0.6rem;
+      font-size: 1.1rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .footer-hint {
+      margin-top: 1.5rem;
+      font-size: 0.75rem;
+      color: #9ca3af;
+      text-align: center;
+    }
+
+    code {
+      font-size: 0.75rem;
+      background: rgba(15, 23, 42, 0.9);
+      padding: 0.1rem 0.25rem;
+      border-radius: 0.25rem;
+    }
+
+    @media (max-width: 600px) {
+      .app {
+        padding: 1.25rem 1.25rem 1.75rem;
+      }
+      .choices {
+        flex-direction: column;
+      }
+      button.choice-btn,
+      button.restart-btn {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <h1>LOST SIGNAL</h1>
+    <p class="subtitle">Analog Archive // Choose Your Next Cut</p>
+    <p class="warning">Content: unsettling themes, liminal spaces, eerie broadcasts</p>
+
+    <main id="story-container">
+      <!-- START -->
+      <section class="story-part active" id="start">
+        <div class="story-meta">
+          <span class="tag tag--tape">ARCHIVE ROOM // CAM 01</span>
+          <span class="timestamp">REC: 23:07 // NO DATE</span>
+        </div>
+        <img
+          class="story-image"
+          src="https://images.pexels.com/photos/6898859/pexels-photo-6898859.jpeg"
+          alt="A dark monitor room with glowing screens"
+        >
+        <p class="story-text">
+          You are alone in the archive room.  
+          A stack of unlabeled VHS tapes sits beside an old CRT monitor.  
+          The screen hums with a low buzz, faint static crawling at the edges.
+          On the desk, someone has written in marker:
+          <br><br>
+          <span class="glitch">“DO NOT WATCH ALONE. DO NOT WATCH OUT OF ORDER.”</span>
+          <br><br>
+          Two tapes are already halfway out of their cases:
+          one marked <strong>A – HOUSE</strong>, the other <strong>B – SERVICE TUNNEL</strong>.
+        </p>
+        <div class="choices">
+          <button class="choice-btn" data-next="tapeA">
+            Insert Tape A // HOUSE
+          </button>
+          <button class="choice-btn" data-next="tapeB">
+            Insert Tape B // TUNNEL
+          </button>
+        </div>
+      </section>
+
+      <!-- TAPE A BRANCH: HOUSE -->
+      <section class="story-part" id="tapeA">
+        <div class="story-meta">
+          <span class="tag tag--tape">TAPE A // CUT 01</span>
+          <span class="timestamp">CAM 02 // DRIVEWAY</span>
+        </div>
+        <img
+          class="story-image"
+          src="https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg"
+          alt="A lonely house at night"
+        >
+        <p class="story-text">
+          The recording flickers into life.  
+          A single-story house sits at the end of a quiet road. The porch light is on,
+          but the windows are dark. A car idles in the driveway.  
+          The headlights are on. No one is inside.
+          <br><br>
+          The timer on the screen keeps jumping backward by exactly three seconds.
+        </p>
+        <div class="choices">
+          <button class="choice-btn" data-next="carClose">
+            Zoom in on the car
+          </button>
+          <button class="choice-btn" data-next="doorCam">
+            Switch to front door camera
+          </button>
+        </div>
+      </section>
+
+      <section class="story-part" id="carClose">
+        <div class="story-meta">
+          <span class="tag tag--tape">TAPE A // CUT 03</span>
+          <span class="timestamp">CAM 03 // DRIVER SIDE</span>
+        </div>
+        <img
+          class="story-image"
+          src="https://images.pexels.com/photos/3764989/pexels-photo-3764989.jpeg"
+          alt="Close-up of a car at night"
+        >
+        <p class="story-text">
+          The view jumps closer with a harsh click.  
+          The driver’s seat is empty. The engine is running.
+          On the passenger seat lies a single VHS tape with a handwritten label:
+          <br><br>
+          <span class="glitch">“DO NOT FAST-FORWARD.”</span>
+          <br><br>
+          As you lean toward the monitor, you notice a reflection in the car window.
+          The archive room. Your chair. Your monitor.  
+          But the timecode doesn’t match the clock in here.
+        </p>
+        <div class="choices">
+          <button class="choice-btn" data-next="ending_missing">
+            Eject Tape A immediately
+          </button>
+          <button class="choice-btn" data-next="ending_caller">
+            Lean closer &amp; try to read the reflection
+          </button>
+        </div>
+      </section>
+
+      <section class="story-part" id="doorCam">
+        <div class="story-meta">
+          <span class="tag tag--tape">TAPE A // CUT 04</span>
+          <span class="timestamp">CAM 04 // FRONT DOOR</span>
+        </div>
+        <img
+          class="story-image"
+          src="https://images.pexels.com/photos/277773/pexels-photo-277773.jpeg"
+          alt="Front door with porch light"
+        >
+        <p class="story-text">
+          The perspective jumps to the front door.  
+          The porch light buzzes faintly. A doormat reads “WELCOME BACK”.
+          The door is closed, but the peephole is glowing with a soft, wrong color,
+          like light coming from an underwater TV.
+          <br><br>
+          For a single frame, the text on the doormat changes:
+          <span class="glitch">“WELCOME INSIDE.”</span>
+          Then it’s normal again.
+        </p>
+        <div class="choices">
+          <button class="choice-btn" data-next="ending_loop">
+            Rewind &amp; play that frame again
+          </button>
+          <button class="choice-btn" data-next="ending_shut">
+            Stop the tape &amp; lock the archive
+          </button>
+        </div>
+      </section>
+
+      <!-- TAPE B BRANCH: TUNNEL -->
+      <section class="story-part" id="tapeB">
+        <div class="story-meta">
+          <span class="tag tag--tape">TAPE B // CUT 01</span>
+          <span class="timestamp">CAM 07 // ACCESS TUNNEL</span>
+        </div>
+        <img
+          class="story-image"
+          src="https://images.pexels.com/photos/3800079/pexels-photo-3800079.jpeg"
+          alt="A dim concrete tunnel"
+        >
+        <p class="story-text">
+          The picture snaps to a narrow concrete tunnel, lit by flickering fluorescent lights.
+          A painted arrow on the floor points deeper underground.  
+          The microphone picks up distant dripping and a low mechanical hum
+          that doesn’t sync with the image.
+          <br><br>
+          The end of the tunnel branches: one path goes down a set of stairs,
+          the other toward a door marked “TRANSMISSION ROOM”.
+        </p>
+        <div class="choices">
+          <button class="choice-btn" data-next="tunnelDeep">
+            Follow the stairs down
+          </button>
+          <button class="choice-btn" data-next="stationRoom">
+            Head for the Transmission Room
+          </button>
+        </div>
+      </section>
+
+      <section class="story-part" id="tunnelDeep">
+        <div class="story-meta">
+          <span class="tag tag--tape">TAPE B // CUT 03</span>
+          <span class="timestamp">CAM 09 // LOWER LEVEL</span>
+        </div>
+        <img
+          class="story-image"
+          src="https://images.pexels.com/photos/5214416/pexels-photo-5214416.jpeg"
+          alt="Stairs leading deeper underground"
+        >
+        <p class="story-text">
+          The camera stutters as it descends the stairs.  
+          At the bottom, the tunnel opens into a circular chamber.
+          In the center sits an old TV on a metal cart, turned toward the camera,
+          screen glowing dimly with static.
+          <br><br>
+          On the recording, you watch the camera walk up to the TV and place
+          something on top of it: a tape with your archive ID written on it.
+        </p>
+        <div class="choices">
+          <button class="choice-btn" data-next="ending_signal">
+            Let the recording keep playing
+          </button>
+          <button class="choice-btn" data-next="ending_static">
+            Stop the tape &amp; unplug everything
+          </button>
+        </div>
+      </section>
+
+      <section class="story-part" id="stationRoom">
+        <div class="story-meta">
+          <span class="tag tag--tape">TAPE B // CUT 04</span>
+          <span class="timestamp">CAM 11 // TRANSMISSION ROOM</span>
+        </div>
+        <img
+          class="story-image"
+          src="https://images.pexels.com/photos/6898855/pexels-photo-6898855.jpeg"
+          alt="An old transmission or radio room"
+        >
+        <p class="story-text">
+          The tunnel ends at a heavy metal door. The sign reads:
+          “LOCAL BROADCAST – AUTHORIZED PERSONNEL ONLY”.
+          The handle turns by itself. The door opens.
+          <br><br>
+          Inside, racks of equipment blink weakly.  
+          A wall of small CRT screens shows different angles of the same empty room:
+          your archive room. On one of the screens, the chair is empty.
+          On another, someone is sitting in it, but the recording won’t focus on their face.
+        </p>
+        <div class="choices">
+          <button class="choice-btn" data-next="ending_loop">
+            Switch every screen to Channel 0
+          </button>
+          <button class="choice-btn" data-next="ending_static">
+            Cut power to the transmission rack
+          </button>
+        </div>
+      </section>
+
+      <!-- ENDINGS -->
+      <section class="story-part" id="ending_signal">
+        <div class="story-meta">
+          <span class="tag">END FILE // 01</span>
+          <span class="timestamp">STATUS: BROADCAST RESTORED</span>
+        </div>
+        <img
+          class="story-image"
+          src="https://images.pexels.com/photos/6898852/pexels-photo-6898852.jpeg"
+          alt="Rows of TV screens glowing in the dark"
+        >
+        <span class="ending-label">Ending: The Signal Spreads</span>
+        <h2 class="ending-title">You Let It Play</h2>
+        <p class="story-text">
+          On the screen, the camera presses the play button on the TV in the chamber.
+          The static sharpens into a perfect copy of your own face, watching a screen.
+          The speakers emit a long, flat tone.
+          <br><br>
+          Every monitor in the transmission room flips to the same channel.
+          In the corner of each image, new text appears:
+          <span class="glitch">“LIVE FEED – VIEWER: 01”</span>.
+          <br><br>
+          Back in the archive room, the hum grows louder. Somewhere in town,
+          all televisions briefly switch to a channel no one remembers tuning to.
+          They see what you are seeing now.
+        </p>
+        <button class="restart-btn restart">
+          REWIND TO START
+        </button>
+      </section>
+
+      <section class="story-part" id="ending_shut">
+        <div class="story-meta">
+          <span class="tag">END FILE // 02</span>
+          <span class="timestamp">STATUS: ARCHIVE SEALED</span>
+        </div>
+        <img
+          class="story-image"
+          src="https://images.pexels.com/photos/280197/pexels-photo-280197.jpeg"
+          alt="A closed door in a dark corridor"
+        >
+        <span class="ending-label">Ending: Door Left Closed</span>
+        <h2 class="ending-title">You Walk Away</h2>
+        <p class="story-text">
+          You hit stop. The tape whirs, then falls silent.  
+          You remove it, put it back in its case, and slide the bolt on the archive door.
+          The monitor stays black.
+          <br><br>
+          For a moment, you think you see a glow reflected in the glass,
+          but when you look directly, it’s gone.
+          <br><br>
+          You make a note in the log: <em>“TAPE A – UNVIEWABLE.”</em>
+          The entry writes itself a second time, slightly misaligned, as if the page
+          is trying to remember where the line should be.
+        </p>
+        <button class="restart-btn restart">
+          REWIND TO START
+        </button>
+      </section>
+
+      <section class="story-part" id="ending_caller">
+        <div class="story-meta">
+          <span class="tag">END FILE // 03</span>
+          <span class="timestamp">STATUS: LINE CONNECTED</span>
+        </div>
+        <img
+          class="story-image"
+          src="https://images.pexels.com/photos/2859094/pexels-photo-2859094.jpeg"
+          alt="A ringing telephone in a dark room"
+        >
+        <span class="ending-label">Ending: The Call Is Coming From</span>
+        <h2 class="ending-title">You Look Too Closely</h2>
+        <p class="story-text">
+          As you lean toward the monitor, the reflection in the car window sharpens.
+          It’s the archive room, but older – different furniture, different equipment.
+          The person in the chair turns toward the camera and lifts a phone receiver.
+          <br><br>
+          The phone on your own desk begins to ring.
+          The number on the caller ID is your extension.
+          The tape keeps playing, but the person on the screen is now waiting
+          for you to answer.
+          <br><br>
+          You never hear your voice on the tape, but the recording doesn’t end.
+        </p>
+        <button class="restart-btn restart">
+          REWIND TO START
+        </button>
+      </section>
+
+      <section class="story-part" id="ending_missing">
+        <div class="story-meta">
+          <span class="tag">END FILE // 04</span>
+          <span class="timestamp">STATUS: VIEWER NOT FOUND</span>
+        </div>
+        <img
+          class="story-image"
+          src="https://images.pexels.com/photos/6898854/pexels-photo-6898854.jpeg"
+          alt="An empty chair in front of monitors"
+        >
+        <span class="ending-label">Ending: Frame 0</span>
+        <h2 class="ending-title">You Eject the Tape</h2>
+        <p class="story-text">
+          You slam the eject button. The tape shoots out of the VCR.  
+          The screen goes black, then shows a single freeze frame.
+          It’s your chair, empty.
+          <br><br>
+          The timecode reads <span class="glitch">00:00:00</span>.  
+          The picture doesn’t change, no matter what you press.
+          <br><br>
+          In tomorrow’s logbook, someone writes that you never finished your shift.
+          No one remembers when you left, only that your chair was still turning
+          very slowly, as if someone had just stood up.
+        </p>
+        <button class="restart-btn restart">
+          REWIND TO START
+        </button>
+      </section>
+
+      <section class="story-part" id="ending_loop">
+        <div class="story-meta">
+          <span class="tag">END FILE // 05</span>
+          <span class="timestamp">STATUS: LOOP DETECTED</span>
+        </div>
+        <img
+          class="story-image"
+          src="https://images.pexels.com/photos/2736139/pexels-photo-2736139.jpeg"
+          alt="A TV displaying another TV recursively"
+        >
+        <span class="ending-label">Ending: Play Again</span>
+        <h2 class="ending-title">You Change the Channel</h2>
+        <p class="story-text">
+          You rewind. You switch to Channel 0.  
+          You scrub frame by frame, searching for the moment the text on the mat changes,
+          or the monitors sync up, or the face on the screen looks directly at you.
+          <br><br>
+          Eventually you find it: a frame you don’t remember seeing before.
+          The caption reads:
+          <span class="glitch">“SELECT NEXT CUT TO CONTINUE.”</span>
+          <br><br>
+          The image on the tape is the exact moment you first sat down to watch these tapes.
+          On the desk, two tapes are already halfway out of their cases:
+          one marked A – HOUSE, the other B – SERVICE TUNNEL.
+        </p>
+        <button class="restart-btn restart">
+          REWIND TO START
+        </button>
+      </section>
+
+      <section class="story-part" id="ending_static">
+        <div class="story-meta">
+          <span class="tag">END FILE // 06</span>
+          <span class="timestamp">STATUS: STATIC ONLY</span>
+        </div>
+        <img
+          class="story-image"
+          src="https://images.pexels.com/photos/667609/pexels-photo-667609.jpeg"
+          alt="TV static filling the screen"
+        >
+        <span class="ending-label">Ending: White Noise</span>
+        <h2 class="ending-title">You Pull the Plug</h2>
+        <p class="story-text">
+          You reach down and yank the power cable from the wall.
+          Every machine in the room dies at once.  
+          The sudden silence is louder than the static ever was.
+          <br><br>
+          You hold your breath.  
+          The monitor, disconnected and dark, flashes for a moment with a final message:
+          <span class="glitch">“POWER LOST – RESUMING FROM LAST VIEWER.”</span>
+          <br><br>
+          When the room is fully dark, you can still see the faint outline
+          of your reflection on the glass, lit by a glow that isn’t there.
+        </p>
+        <button class="restart-btn restart">
+          REWIND TO START
+        </button>
+      </section>
+    </main>
+
+    <p class="footer-hint">
+      To add more cut scenes, duplicate a <code>&lt;section class="story-part" id="..."></code>,
+      give it a new <code>id</code>, and point another button’s <code>data-next</code> at it.
+    </p>
+  </div>
+
+  <script>
+    const storyParts = document.querySelectorAll(".story-part");
+    const choiceButtons = document.querySelectorAll("[data-next]");
+    const restartButtons = document.querySelectorAll(".restart");
+
+    function showPart(id) {
+      storyParts.forEach(part => part.classList.remove("active"));
+      const nextPart = document.getElementById(id);
+      if (nextPart) {
+        nextPart.classList.add("active");
+      } else {
+        console.warn("No story part found with id:", id);
+      }
+    }
+
+    choiceButtons.forEach(button => {
+      button.addEventListener("click", () => {
+        const nextId = button.getAttribute("data-next");
+        showPart(nextId);
+      });
+    });
+
+    restartButtons.forEach(button => {
+      button.addEventListener("click", () => {
+        showPart("start");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
+    });
+  </script>
+</body>
+</html>
